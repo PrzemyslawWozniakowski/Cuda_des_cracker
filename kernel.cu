@@ -6,9 +6,10 @@
 #include <iostream>
 #include <chrono>
 #include <random>
-//#include "Const_Values.h"
+#include <ctime>
+#include <cstdio>
 
-typedef unsigned long long uint64;
+
 #define MAXL 64
 #pragma region CUDA_CONSTANTS
 
@@ -318,183 +319,195 @@ void cudaCheckErrors(cudaError_t cudaStatus)
 }
 #pragma endregion
 
-__device__ __host__ uint64 Get_Bit(uint64 number, int bitNumber);
-__device__ __host__ void Set_Bit(uint64* number, int bitNumber, uint64 value);
-__device__ __host__ uint64 Permute(uint64 number, int* Permutation_Table, int length);
-__device__ __host__ void Split(uint64 key, uint64* left, uint64* right, int keyLength);
-__device__ __host__ uint64 CycleBitsToLeft(uint64 value, int shiftNumber, int valueLength);
+__device__ __host__ uint64_t GetNBit(uint64_t number, int bitNumber);
+__device__ __host__ void SetNBit(uint64_t* number, int bitNumber, uint64_t value);
+__device__ __host__ uint64_t ApplyPermutation(uint64_t number, int* Permutation_Table, int length);
+__device__ __host__ void SplitInHalf(uint64_t key, uint64_t* left, uint64_t* right, int keyLength);
+__device__ __host__ uint64_t CycleToLeft(uint64_t value, int shiftNumber, int valueLength);
 
-__host__ uint64 EncryptData_Host(uint64 dataToEncrypt, uint64 desKey);
-__host__  void Create_SubKeys_Host(uint64* subKeys, uint64 desKey);
-__host__  void Create_Kn_Host(uint64* subkeys, uint64* C, uint64* D);
-__host__ uint64 Function_Host(uint64 data, uint64 key);
-__host__ uint64 Encode_Host(uint64* subKeys, uint64 dataToEncrypt);
+__host__ uint64_t EncryptData(uint64_t dataToEncrypt, uint64_t desKey);
+__host__  void GenerateSubKeys(uint64_t* subKeys, uint64_t desKey);
+__host__  void GenerateKn(uint64_t* subkeys, uint64_t* C, uint64_t* D);
+__host__ uint64_t Function(uint64_t data, uint64_t key);
+__host__ uint64_t Encode(uint64_t* subKeys, uint64_t dataToEncrypt);
+__host__ void Crack_Host(uint64_t* crackedKey, uint64_t dataToEncrypt, uint64_t encryptedMessage, uint64_t maxKeyVal, int keyLength);
 
+__device__ uint64_t EncryptData_Device(uint64_t dataToEncrypt, uint64_t desKey);
+__device__  void GenerateSubKeys_Device(uint64_t* subKeys, uint64_t desKey);
+__device__  void GenerateKn_Device(uint64_t* subkeys, uint64_t* C, uint64_t* D);
+__device__ uint64_t Function_Device(uint64_t data, uint64_t key);
+__device__ uint64_t Encode_Device(uint64_t* subKeys, uint64_t dataToEncrypt);
 
-__device__ uint64 EncryptData(uint64 dataToEncrypt, uint64 desKey);
-__device__  void Create_SubKeys(uint64* subKeys, uint64 desKey);
-__device__  uint64* Create_Kn(uint64* C, uint64* D);
-__device__ uint64 Function(uint64 data, uint64 key);
-__device__ uint64 Encode(uint64* subKeys, uint64 dataToEncrypt);
-
-__host__ void PrintUint(uint64 v);
-
-__global__ void Crack(uint64 data, uint64 encodedData, uint64 *key, bool *done, uint64 maxLenght);
-__host__ uint64 GenerateDesKey(int keyLenght);
+__host__ void PrintUint(uint64_t v);
+__global__ void Crack_Kernel(uint64_t data, uint64_t encodedData, uint64_t *crackedkey, bool *foundFlag, uint64_t maxKeyVal, int keyLength);
+__host__ uint64_t GenerateDesKey(int keyLenght);
 
 
 int main()
 {
-	uint64 dataToEncrypt = 0x0123456789ABCDEF;
-	uint64 desKey = 0x133457799BBCDFF1;
 
-	uint64 encryptedData = EncryptData_Host(dataToEncrypt, desKey);
-	/*cudaCheckErrors(cudaSetDevice(0));
-	std::cout << "Enter key lenght:" << std::endl;
+	cudaCheckErrors(cudaSetDevice(0));
+	std::cout << "Dlugosc klucza:" << std::endl;
 
-	int keyLenght;
-	std::cin >> keyLenght;
-	int maxLenght = 1 << keyLenght;
+	int keyLength;
+	std::cin >> keyLength;
+	uint64_t maxKeyVal = (uint64_t)1 << keyLength;
+	uint64_t desKey = GenerateDesKey(keyLength);
+	uint64_t dataToEncrypt = 0x0123456789ABCDEF;
+	uint64_t encryptedMessage = EncryptData(dataToEncrypt, desKey);
+	
+	uint64_t* deviceKey = NULL, crackedKeyGPU;
+	int cracked_val = 0;
+	bool *wasCracked = NULL;
+	cudaCheckErrors(cudaMalloc((void**)&deviceKey, sizeof(uint64_t)));
+	cudaCheckErrors(cudaMalloc((void**)&wasCracked, sizeof(int)));
+	cudaCheckErrors(cudaMemcpy(wasCracked, &cracked_val, sizeof(int), cudaMemcpyHostToDevice));
 
-	uint64 desKey = GenerateDesKey(keyLenght);
-	uint64 dataToEncrypt = 0x0123456789ABCDEF;
-	uint64 encryptedData = EncryptData_Host(dataToEncrypt, desKey);
-
-	uint64* devKey = NULL, crackedKey;
-	int done_val = 0;
-	bool *done = NULL;
-	cudaCheckErrors(cudaMalloc((void**)&devKey, sizeof(uint64)));
-	cudaCheckErrors(cudaMalloc((void**)&done, sizeof(int)));
-	cudaCheckErrors(cudaMemcpy(done, &done_val, sizeof(int), cudaMemcpyHostToDevice));
-
-	std::chrono::system_clock::time_point begin = std::chrono::system_clock::now();
-	Crack << <16, 16 >> > (dataToEncrypt, encryptedData, devKey, done, maxLenght);
-
+	std::chrono::system_clock::time_point start = std::chrono::system_clock::now();
+	Crack_Kernel << <4096, 1024 >> > (dataToEncrypt, encryptedMessage, deviceKey, wasCracked, maxKeyVal, keyLength);
 	cudaCheckErrors(cudaDeviceSynchronize());
 	std::chrono::system_clock::time_point end = std::chrono::system_clock::now();
-	auto gpuExecutionTime = (std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count()) / 1000000.0;
 
-	cudaCheckErrors(cudaMemcpy(&crackedKey, devKey, sizeof(uint64), cudaMemcpyDeviceToHost));
-	uint64 encryptedDataWithKeyFromGPU = EncryptData_Host(dataToEncrypt, crackedKey);
-	if (encryptedDataWithKeyFromGPU == encryptedData)
+	auto gpuExecutionTime = (std::chrono::duration_cast<std::chrono::microseconds>(end - start).count()) / 1000000.0;
+
+	cudaCheckErrors(cudaMemcpy(&crackedKeyGPU, deviceKey, sizeof(uint64_t), cudaMemcpyDeviceToHost));
+
+	uint64_t encryptedDataWithKeyFromGPU = EncryptData(dataToEncrypt, crackedKeyGPU);
+	if (encryptedDataWithKeyFromGPU == encryptedMessage)
 	{
-		std::cout << "[GPU] Found matching key in " << gpuExecutionTime << " seconds" << std::endl;
-		std::cout << "Found key: " << crackedKey << std::endl;
-		std::cout << "Original key: " << desKey << std::endl << std::endl;
+		std::cout << "GPU klucz znaleziony w: " << gpuExecutionTime << " sekund" << std::endl;
+		std::cout << "Klucz znaleziony na GPU: " << (crackedKeyGPU >> (MAXL - keyLength));
+		PrintUint(crackedKeyGPU);
+		std::cout << "Oryginalny klucz: " <<(desKey >> (MAXL - keyLength));
+		PrintUint(desKey);
 	}
-	else if (crackedKey == 0)
+	else if (crackedKeyGPU == 0)
 	{
-		std::cout << "[GPU] Can not find matching key!" << std::endl << std::endl;
+		std::cout << "GPU nie znalazlo klucza." << std::endl << std::endl;
 	}
 	else
 	{
-		std::cout << "[GPU] Found key do not work!" << std::endl;
+		std::cout << "GPU klucz nie dziala." << std::endl;
 	}
+	std::cout << "================================================= " << std::endl << std::endl;
 
 
-	begin = std::chrono::system_clock::now();
-	int keyFound = -1;
-	for (uint64 i = 0; i < maxLenght; i++)
-	{
-		uint64 currentValue = EncryptData_Host(dataToEncrypt, i);
-		if (currentValue == encryptedData)
-		{
-			keyFound = i;
-			break;
-		}
-	}
+	start = std::chrono::system_clock::now();
+	uint64_t crackedKeyCPU = -1;
+	Crack_Host(&crackedKeyCPU, dataToEncrypt, encryptedMessage, maxKeyVal, keyLength);
+
 	end = std::chrono::system_clock::now();
-	auto cpuExecutionTime = (std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count()) / 1000000.0;
 
-	if (keyFound != -1)
+	auto cpuExecutionTime = (std::chrono::duration_cast<std::chrono::microseconds>(end - start).count()) / 1000000.0;
+
+	if (crackedKeyCPU != -1)
 	{
-		std::cout << "[CPU] Found matching key in " << cpuExecutionTime << " sekund" << std::endl;
-		std::cout << "Found key: " << keyFound << std::endl;
-		std::cout << "Original key: " << desKey << std::endl;
+		std::cout << "CPU klucz znaleziony w: " << cpuExecutionTime << " sekund" << std::endl;
+		std::cout << "Klucz znaleziony na CPU: " << (crackedKeyCPU >> (MAXL - keyLength));
+		PrintUint(crackedKeyCPU);
+		std::cout << "Oryginalny klucz: " << (desKey >> (MAXL - keyLength));
+		PrintUint(desKey);
 	}
 	else
 	{
-		std::cout << "[CPU] Can not find matching key!" << std::endl;
+		std::cout << "CPU klucz nie dziala." << std::endl;
 	}
 
-	std::cout << "GPU solving time is " << gpuExecutionTime / cpuExecutionTime * 100 << " % CPU solving time." << std::endl;
+	std::cout << "GPU znajduje klucz w " << gpuExecutionTime / cpuExecutionTime * 100 << " % czasu CPU." << std::endl;
 
-	cudaFree(devKey);
-	cudaFree(done);*/
+	cudaFree(deviceKey);
+	cudaFree(wasCracked);
 
 	return 0;
 }
 
-__global__ void Crack(uint64 data, uint64 encodedData, uint64 *key, bool *foundKey, uint64 maxLenght)
+__global__ void Crack_Kernel(uint64_t data, uint64_t encodedData, uint64_t *crackedkey, bool *foundFlag, uint64_t maxKeyVal, int keyLength)
 {
-	for (uint64 i = blockIdx.x * blockDim.x + threadIdx.x; i <= maxLenght; i += blockDim.x * gridDim.x)
+	for (uint64_t i = blockIdx.x * blockDim.x + threadIdx.x; i <= maxKeyVal; i += blockDim.x * gridDim.x)
 	{
-		uint64 currentValue = EncryptData(data, i);
+		uint64_t keycandidate = i << (MAXL - keyLength);
+		uint64_t currentValue = EncryptData_Device(data, keycandidate);
 		if (currentValue == encodedData)
 		{
-			*key = i;
-			*foundKey = false;
+			*crackedkey = keycandidate;
+			*foundFlag = false;
 			return;
 		}
-		if (*foundKey == true)
+		if (*foundFlag == true)
 		{
 			return;
+		}
+	}
+}
+
+__host__ void Crack_Host(uint64_t* crackedKey, uint64_t dataToEncrypt, uint64_t encryptedMessage, uint64_t maxKeyVal, int keyLength)
+{
+	for (uint64_t i = 0; i < maxKeyVal; i++)
+	{
+		uint64_t keycandidate = i << (MAXL - keyLength);
+		uint64_t currentValue = EncryptData(dataToEncrypt, keycandidate);
+		if (currentValue == encryptedMessage)
+		{
+			*crackedKey = keycandidate;
+			break;
 		}
 	}
 }
 
 #pragma region DeviceAndHostFunctions
 
-__host__ void PrintUint(uint64 v)
+__host__ void PrintUint(uint64_t v)
 {
 	std::cout << "\n";
-	uint64 j = 1;
+	uint64_t j = 1;
 	for (int i = 0; i < 64; i++)
 	{
 		std::cout << (v>>(63-i) &j);
+		if ((i + 1) % 8 == 0)
+			std::cout << " ";
 	}
 	std::cout << "\n";
 
 }
 
-__device__ __host__ uint64 Get_Bit(uint64 number, int bitNumber)
+__device__ __host__ uint64_t GetNBit(uint64_t number, int bitNumber)
 {
-	return ((uint64)1 & (number>>(MAXL-bitNumber)));
+	return ((uint64_t)1 & (number>>(MAXL-bitNumber)));
 }
 
-__device__ __host__ void Set_Bit(uint64* number, int bitNumber, uint64 value)
+__device__ __host__ void SetNBit(uint64_t* number, int bitNumber, uint64_t value)
 {
-	(*number) = (*number) &  ~((uint64)1 << (MAXL - bitNumber));
+	(*number) = (*number) &  ~((uint64_t)1 << (MAXL - bitNumber));
 	(*number)= (*number) | (value << (MAXL - bitNumber));
 }
 
-__device__ __host__ uint64 Permute(uint64 number, int* Permutation_Table, int length)
+__device__ __host__ uint64_t ApplyPermutation(uint64_t number, int* Permutation_Table, int length)
 {
-	uint64 numberchanged = 0;
+	uint64_t numberchanged = 0;
 	for (int i = 0; i < length; i++)
 	{
-		Set_Bit(&numberchanged, i+1, Get_Bit(number, Permutation_Table[i]));
+		SetNBit(&numberchanged, i+1, GetNBit(number, Permutation_Table[i]));
 	}
 	return numberchanged;	
 }
 
-__device__ __host__ void Split(uint64 key, uint64* left, uint64* right, int keyLength)
+__device__ __host__ void SplitInHalf(uint64_t key, uint64_t* left, uint64_t* right, int keyLength)
 {
 	*right = *left = 0;
 	for (int i = 1; i <= keyLength / 2; i++)
 	{
-		Set_Bit(right, i, Get_Bit(key, keyLength / 2 + i));
-		Set_Bit(left, i, Get_Bit(key, i));
+		SetNBit(right, i, GetNBit(key, keyLength / 2 + i));
+		SetNBit(left, i, GetNBit(key, i));
 	}
 }
 
-__device__ __host__ uint64 CycleBitsToLeft(uint64 value, int shiftNumber, int valueLength) 
+__device__ __host__ uint64_t CycleToLeft(uint64_t value, int shiftNumber, int valueLength) 
 {
 	for (int i = 0; i < shiftNumber; i++)
 	{
-		uint64 bit = Get_Bit(value, 1);
+		uint64_t bit = GetNBit(value, 1);
 		value <<= 1;
-		Set_Bit(&value, valueLength, bit);
+		SetNBit(&value, valueLength, bit);
 	}
 	return value;
 }
@@ -503,220 +516,193 @@ __device__ __host__ uint64 CycleBitsToLeft(uint64 value, int shiftNumber, int va
 
 #pragma region DeviceFunctions
 
-__device__ uint64 EncryptData(uint64 dataToEncrypt, uint64 desKey)
+
+__device__  uint64_t EncryptData_Device(uint64_t dataToEncrypt, uint64_t desKey)
 {
-	uint64 subKeys[16];
-	Create_SubKeys(subKeys, desKey);
-	return Encode(subKeys, dataToEncrypt);
+	uint64_t subKeys[16];
+
+	GenerateSubKeys_Device(subKeys, desKey);
+	uint64_t  encoded = Encode_Device(subKeys, dataToEncrypt);
+	return encoded;
 }
 
-__device__  void Create_SubKeys(uint64* subKeys, uint64 desKey)
+__device__  void GenerateSubKeys_Device(uint64_t* subKeys, uint64_t desKey)
 {
-	uint64 kplus = Permute(desKey, PC_1, 56);
+	uint64_t kplus = ApplyPermutation(desKey, PC_1, 56);
+	uint64_t C[17];
+	uint64_t D[17];
 
-	uint64 C[17];
-	uint64 D[17];
-
-	Split(kplus, &C[0], &D[0], 56);
+	SplitInHalf(kplus, &C[0], &D[0], 56);
 
 	for (int i = 1; i <= 16; i++)
 	{
-		C[i] = CycleBitsToLeft(C[i - 1], SHIFTS[i], 28);
-		D[i] = CycleBitsToLeft(D[i - 1], SHIFTS[i], 28);
+		C[i] = CycleToLeft(C[i - 1], SHIFTS[i - 1], 28);
+		D[i] = CycleToLeft(D[i - 1], SHIFTS[i - 1], 28);
 	}
 
-	subKeys= Create_Kn(C, D);
+	GenerateKn_Device(subKeys, C, D);
 }
 
-__device__  uint64* Create_Kn(uint64* C, uint64* D)
+__device__  void GenerateKn_Device(uint64_t* subkeys, uint64_t* C, uint64_t* D)
 {
-	uint64	Kn[16];
-	for(int i=0;i<16;i++)
-	{
-		Kn[i] = C[i + 1];
-		Kn[i] = Kn[i] | (D[i + 1]>>28);
-		Kn[i] = Permute(Kn[i], PC_2, 48);
-	}
-	return Kn;
-}
-
-__device__ uint64 Encode(uint64* subKeys,uint64 data)
-{
-	uint64 data_ip = Permute(data, IP, 64);
-
-	uint64 L[17];
-	uint64 R[17];
-
-	Split(data_ip, &L[0], &R[0], 64);
-
-	for (int i = 1; i <= 16; i++)
-	{
-		
-		L[i] = R[i-1];
-		R[i] = L[i - 1] ^ Function(R[i - 1], subKeys[i - 1]);
-	}
-	uint64 RL = R[16] | (L[16]>>32);
-
-	return Permute(RL, IP_REV, 64);
-}
-
-__device__ uint64 Function(uint64 data, uint64 key)
-{
-	uint64 ER = Permute(data, E_BIT, 48);
-	uint64 KxorER = ER ^ key;
-	uint64 S[8];
-	uint64 B[8];
-
-	for (int i = 0; i < 8; i++)
-	{
-		B[i] = 0;
-
-		for (int j = 1; j <= 6; j++)
-		{
-			Set_Bit(&B[i], j, Get_Bit(KxorER, i * 6 + j));
-		}
-
-		uint64 firstAndLastBit = Get_Bit(B[i], 6) << 1 | Get_Bit(B[i], 1);
-		uint64 middleBits = Get_Bit(B[i], 5) << 3 | Get_Bit(B[i], 5) << 2 | Get_Bit(B[i], 3) << 1 | Get_Bit(B[i], 2);
-
-		S[i] = ALL_S[i][(int)firstAndLastBit * 16 + (int)middleBits];
-	}
-	uint64 result = 0;
-
-	for (int i = 0; i < 8; i++)
-	{
-		result |= S[i] << 28 - 4 * i;
-	}
-
-	return Permute(result, P, 32);
-}
-
-#pragma endregion
-
-#pragma region HostFunctions
-
-///
-__host__ uint64 GenerateDesKey(int keyLenght)
-{
-	std::mt19937 mt;
-	std::uniform_int_distribution<int> randomV(0, 1);
-
-	uint64 key = 0;
-	for (int i = 0; i < keyLenght; i++)
-	{
-		Set_Bit(&key, MAXL-i, randomV(mt));
-	}
-	return key;
-}
-///
-__host__  uint64 EncryptData_Host(uint64 dataToEncrypt, uint64 desKey)
-{
-	uint64 subKeys[16];
-
-	Create_SubKeys_Host(subKeys, desKey);
-	PrintUint(subKeys[0]);
-	return Encode_Host(subKeys, dataToEncrypt);
-}
-
-__host__  void Create_SubKeys_Host(uint64* subKeys, uint64 desKey)
-{
-	uint64 kplus = Permute(desKey, PC_1_HOST, 56);
-	//PrintUint(kplus);
-	uint64 C[17];
-	uint64 D[17];
-
-	Split(kplus, &C[0], &D[0], 56);
-
-	for (int i = 1; i <= 16; i++)
-	{
-		C[i] = CycleBitsToLeft(C[i - 1], SHIFTS_HOST[i-1], 28);
-		D[i] = CycleBitsToLeft(D[i - 1], SHIFTS_HOST[i-1], 28);
-	}
-	//PrintUint(C[0]);
-	//PrintUint(D[0]);
-
-	//PrintUint(C[1]);
-	//PrintUint(D[1]);
-	//PrintUint(C[2]);
-	//PrintUint(D[2]);
-	//PrintUint(C[3]);
-	//PrintUint(D[3]);
-	//PrintUint(C[16]);
-	//PrintUint(D[16]);
-	
-	Create_Kn_Host(subKeys,C, D);
-	//PrintUint(subKeys[0]);
-	//PrintUint(D[16]);
-}
-
-__host__  void Create_Kn_Host(uint64* subkeys, uint64* C, uint64* D)
-{
-	
 	for (int i = 0; i < 16; i++)
 	{
 		subkeys[i] = C[i + 1];
 		subkeys[i] = subkeys[i] | (D[i + 1] >> 28);
-		subkeys[i] = Permute(subkeys[i], PC_2_HOST, 48);
+		subkeys[i] = ApplyPermutation(subkeys[i], PC_2, 48);
 	}
-	
+
 }
 
-__host__  uint64 Encode_Host(uint64* subKeys, uint64 data)
+__device__  uint64_t Encode_Device(uint64_t* subKeys, uint64_t data)
 {
-	uint64 data_ip = Permute(data, IP_HOST, 64);
+	uint64_t data_ip = ApplyPermutation(data, IP, 64);
 
-	uint64 L[17];
-	uint64 R[17];
+	uint64_t L[17];
+	uint64_t R[17];
 
-	Split(data_ip, &L[0], &R[0], 64);
-	//PrintUint(L[0]);
-	//PrintUint(R[0]);
+	SplitInHalf(data_ip, &L[0], &R[0], 64);
 
 
 	for (int i = 1; i <= 16; i++)
 	{
 
 		L[i] = R[i - 1];
-		R[i] = L[i - 1] ^ Function_Host(R[i - 1], subKeys[i - 1]);
-
+		R[i] = L[i - 1] ^ Function_Device(R[i - 1], subKeys[i - 1]);
 	}
-	uint64 RL = R[16] | (L[16] >> 32);
-
-	return Permute(RL, IP_REV_HOST, 64);
+	uint64_t RL = R[16] | (L[16] >> 32);
+	return ApplyPermutation(RL, IP_REV, 64);
 }
 
-__host__  uint64 Function_Host(uint64 data, uint64 key)
+__device__  uint64_t Function_Device(uint64_t data, uint64_t key)
 {
-	uint64 ER = Permute(data, E_BIT_HOST, 48);
-	uint64 KxorER = ER ^ key;
-	uint64 S[8];
-	uint64 B[8];
-
-	PrintUint(KxorER);
-	PrintUint(KxorER);
-	//// FINISHED JERE
+	uint64_t ER = ApplyPermutation(data, E_BIT, 48);
+	uint64_t KxorER = ER ^ key;
+	uint64_t S[8];
+	uint64_t B[8];
 	for (int i = 0; i < 8; i++)
 	{
 		B[i] = 0;
 
 		for (int j = 1; j <= 6; j++)
 		{
-			Set_Bit(&B[i], j, Get_Bit(KxorER, i * 6 + j));
+			SetNBit(&B[i], j, GetNBit(KxorER, i * 6 + j));
 		}
-
-		uint64 firstAndLastBit = Get_Bit(B[i], 6) << 1 | Get_Bit(B[i], 1);
-		uint64 middleBits = Get_Bit(B[i], 5) << 3 | Get_Bit(B[i], 5) << 2 | Get_Bit(B[i], 3) << 1 | Get_Bit(B[i], 2);
-
-		S[i] = ALL_S_HOST[i][(int)firstAndLastBit * 16 + (int)middleBits];
+		uint64_t firstLastBit = GetNBit(B[i], 1) << 1 | GetNBit(B[i], 6);
+		uint64_t midBits = GetNBit(B[i], 2) << 3 | GetNBit(B[i], 3) << 2 | GetNBit(B[i], 4) << 1 | GetNBit(B[i], 5);
+		S[i] = ALL_S[i][(int)firstLastBit * 16 + (int)midBits];
 	}
-	uint64 result = 0;
+	uint64_t result = 0;
 
 	for (int i = 0; i < 8; i++)
 	{
-		result |= S[i] << 28 - 4 * i;
-	}
+		result |= S[i] << 60 - 4 * i;
 
-	return Permute(result, P_HOST, 32);
+	}
+	return ApplyPermutation(result, P, 32);
+}
+
+
+#pragma endregion
+
+#pragma region HostFunctions
+
+__host__ uint64_t GenerateDesKey(int keyLenght)
+{
+	std::mt19937 mt(time(0));
+	std::uniform_int_distribution<int> randomV(0, 1);
+
+	uint64_t key = 0;
+	for (int i = 1; i <= keyLenght; i++)
+	{
+		SetNBit(&key,i, randomV(mt));
+	}
+	return key;
+}
+
+__host__  uint64_t EncryptData(uint64_t dataToEncrypt, uint64_t desKey)
+{
+	uint64_t subKeys[16];
+
+	GenerateSubKeys(subKeys, desKey);
+	return Encode(subKeys, dataToEncrypt);
+}
+
+__host__  void GenerateSubKeys(uint64_t* subKeys, uint64_t desKey)
+{
+	uint64_t kplus = ApplyPermutation(desKey, PC_1_HOST, 56);
+	uint64_t C[17];
+	uint64_t D[17];
+
+	SplitInHalf(kplus, &C[0], &D[0], 56);
+
+	for (int i = 1; i <= 16; i++)
+	{
+		C[i] = CycleToLeft(C[i - 1], SHIFTS_HOST[i-1], 28);
+		D[i] = CycleToLeft(D[i - 1], SHIFTS_HOST[i-1], 28);
+	}
+	
+	GenerateKn(subKeys,C, D);
+}
+
+__host__  void GenerateKn(uint64_t* subkeys, uint64_t* C, uint64_t* D)
+{
+	
+	for (int i = 0; i < 16; i++)
+	{
+		subkeys[i] = C[i + 1];
+		subkeys[i] = subkeys[i] | (D[i + 1] >> 28);
+		subkeys[i] = ApplyPermutation(subkeys[i], PC_2_HOST, 48);
+	}
+	
+}
+
+__host__  uint64_t Encode(uint64_t* subKeys, uint64_t data)
+{
+	uint64_t data_ip = ApplyPermutation(data, IP_HOST, 64);
+
+	uint64_t L[17];
+	uint64_t R[17];
+
+	SplitInHalf(data_ip, &L[0], &R[0], 64);
+
+
+	for (int i = 1; i <= 16; i++)
+	{
+
+		L[i] = R[i - 1];
+		R[i] = L[i - 1] ^ Function(R[i - 1], subKeys[i - 1]);
+	}
+	uint64_t RL = R[16] | (L[16] >> 32);
+	return ApplyPermutation(RL, IP_REV_HOST, 64);
+}
+
+__host__  uint64_t Function(uint64_t data, uint64_t key)
+{
+	uint64_t ER = ApplyPermutation(data, E_BIT_HOST, 48);
+	uint64_t KxorER = ER ^ key;
+	uint64_t S[8];
+	uint64_t B[8];
+	for (int i = 0; i < 8; i++)
+	{
+		B[i] = 0;
+			
+		for (int j = 1; j <= 6; j++)
+		{
+			SetNBit(&B[i], j, GetNBit(KxorER, i * 6 + j));
+		}
+		uint64_t firstLastBit = GetNBit(B[i], 1) << 1 | GetNBit(B[i], 6);
+		uint64_t midBits = GetNBit(B[i],2) << 3 | GetNBit(B[i], 3) << 2 | GetNBit(B[i], 4) << 1 | GetNBit(B[i],5);
+		S[i] = ALL_S_HOST[i][(int)firstLastBit * 16 + (int)midBits];
+	}
+	uint64_t result = 0;
+
+	for (int i = 0; i < 8; i++)
+	{
+		result |= S[i] << 60 - 4 * i;
+
+	}	
+	return ApplyPermutation(result, P_HOST, 32);
 }
 
 #pragma endregion
