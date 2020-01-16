@@ -84,7 +84,10 @@
     <CudaCompile Include="kernel.cu" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Const_Values.h" />
+    <ClInclude Include="Constants.cuh" />
+    <ClInclude Include="deviceAndHostFunctions.cuh" />
+    <ClInclude Include="deviceFunctions.cuh" />
+    <ClInclude Include="hostFunctions.cuh" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

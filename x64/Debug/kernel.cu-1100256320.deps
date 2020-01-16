@@ -11,6 +11,7 @@ C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Tools\MSVC\14.1
 C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Tools\MSVC\14.16.27023\include\cstdio
 C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Tools\MSVC\14.16.27023\include\cstdlib
 C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Tools\MSVC\14.16.27023\include\cstring
+C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Tools\MSVC\14.16.27023\include\ctime
 C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Tools\MSVC\14.16.27023\include\cwchar
 C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Tools\MSVC\14.16.27023\include\eh.h
 C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Tools\MSVC\14.16.27023\include\exception
@@ -141,4 +142,8 @@ c:\program files\nvidia gpu computing toolkit\cuda\v10.1\include\texture_types.h
 c:\program files\nvidia gpu computing toolkit\cuda\v10.1\include\vector_functions.h
 c:\program files\nvidia gpu computing toolkit\cuda\v10.1\include\vector_functions.hpp
 c:\program files\nvidia gpu computing toolkit\cuda\v10.1\include\vector_types.h
+c:\users\przem\source\repos\des_cracker\des_cracker\Constants.cuh
+c:\users\przem\source\repos\des_cracker\des_cracker\deviceAndHostFunctions.cuh
+c:\users\przem\source\repos\des_cracker\des_cracker\deviceFunctions.cuh
+c:\users\przem\source\repos\des_cracker\des_cracker\hostFunctions.cuh
 C:\Users\Przem\source\repos\DES_cracker\DES_cracker\kernel.cu
