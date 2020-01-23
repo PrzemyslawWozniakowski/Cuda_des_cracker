@@ -38,7 +38,15 @@ int main()
 	int keyLength;
 	std::cin >> keyLength;
 
-	uint64_t maxKeyVal = (uint64_t)1 << keyLength;
+	uint64_t maxKeyVal;
+
+	if (keyLength == 64)
+		maxKeyVal = UINT64_MAX;
+	else
+	{
+		maxKeyVal = (uint64_t)1 << keyLength;
+		maxKeyVal -= 1;
+	}
 	uint64_t desKey = GenerateDesKey(keyLength);
 	uint64_t dataToEncrypt = 0x0123456789ABCDEF;
 	uint64_t encryptedMessage = EncryptData(dataToEncrypt, desKey);
@@ -136,7 +144,7 @@ __global__ void Crack_Kernel(uint64_t data, uint64_t encodedData, uint64_t *crac
 
 __host__ void Crack_Host(uint64_t* crackedKey, uint64_t dataToEncrypt, uint64_t encryptedMessage, uint64_t maxKeyVal, int keyLength)
 {
-	for (uint64_t i = 0; i < maxKeyVal; i++)
+	for (uint64_t i = 0; i <= maxKeyVal; i++)
 	{
 		uint64_t keycandidate = i << (MAXL - keyLength);
 		uint64_t currentValue = EncryptData(dataToEncrypt, keycandidate);
@@ -154,7 +162,7 @@ __host__ void PrintUint(uint64_t v)
 	uint64_t j = 1;
 	for (int i = 0; i < 64; i++)
 	{
-		std::cout << (v>>(63-i) &j);
+		std::cout << (v >> (63 - i) &j);
 		if ((i + 1) % 8 == 0)
 			std::cout << " ";
 	}
