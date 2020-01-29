@@ -1,14 +1,6 @@
-﻿  Compiling CUDA source file kernel.cu...
+﻿  Compiling CUDA source file descracker.cu...
   
-  C:\Users\Przem\source\repos\DES_cracker\DES_cracker>"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v10.1\bin\nvcc.exe" -gencode=arch=compute_35,code=\"sm_35,compute_35\" --use-local-env -ccbin "C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Tools\MSVC\14.16.27023\bin\HostX86\x64" -x cu  -Icommon/inc -Icommon/inc -I"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v10.1\include" -I"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v10.1\include"  -G   --keep-dir x64\Debug -maxrregcount=0  --machine 64 --compile -cudart static  -g   -DWIN32 -DWIN64 -D_DEBUG -D_CONSOLE -D_MBCS -Xcompiler "/EHsc /W3 /nologo /Od /Fdx64\Debug\vc141.pdb /FS /Zi /RTC1 /MDd " -o x64\Debug\kernel.cu.obj "C:\Users\Przem\source\repos\DES_cracker\DES_cracker\kernel.cu" 
-C:/Users/Przem/source/repos/DES_cracker/DES_cracker/kernel.cu(98): warning : integer conversion resulted in a change of sign
-  
-C:/Users/Przem/source/repos/DES_cracker/DES_cracker/kernel.cu(105): warning : integer conversion resulted in a change of sign
-  
-C:/Users/Przem/source/repos/DES_cracker/DES_cracker/kernel.cu(98): warning : integer conversion resulted in a change of sign
-  
-C:/Users/Przem/source/repos/DES_cracker/DES_cracker/kernel.cu(105): warning : integer conversion resulted in a change of sign
-  
-  kernel.cu
-c:\users\przem\source\repos\des_cracker\des_cracker\hostFunctions.cuh(21): warning C4244: 'argument': conversion from 'time_t' to 'unsigned int', possible loss of data
+  C:\Users\Przem\source\repos\DES_cracker\DES_cracker>"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v10.1\bin\nvcc.exe" -gencode=arch=compute_35,code=\"sm_35,compute_35\" --use-local-env -ccbin "C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Tools\MSVC\14.16.27023\bin\HostX86\x64" -x cu  -Icommon/inc -Icommon/inc -I"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v10.1\include" -I"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v10.1\include"  -G   --keep-dir x64\Debug -maxrregcount=0  --machine 64 --compile -cudart static  -g   -DWIN32 -DWIN64 -D_DEBUG -D_CONSOLE -D_MBCS -Xcompiler "/EHsc /W3 /nologo /Od /Fdx64\Debug\vc141.pdb /FS /Zi /RTC1 /MDd " -o x64\Debug\descracker.cu.obj "C:\Users\Przem\source\repos\DES_cracker\DES_cracker\descracker.cu" 
+  descracker.cu
+C:/Users/Przem/source/repos/DES_cracker/DES_cracker/descracker.cu(656): warning C4244: 'argument': conversion from 'time_t' to 'unsigned int', possible loss of data
   DES_cracker.vcxproj -> C:\Users\Przem\source\repos\DES_cracker\x64\Debug\DES_cracker.exe

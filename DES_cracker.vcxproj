@@ -81,13 +81,13 @@
     </CudaCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <CudaCompile Include="kernel.cu" />
-  </ItemGroup>
-  <ItemGroup>
     <ClInclude Include="Constants.cuh" />
     <ClInclude Include="deviceAndHostFunctions.cuh" />
     <ClInclude Include="deviceFunctions.cuh" />
     <ClInclude Include="hostFunctions.cuh" />
+  </ItemGroup>
+  <ItemGroup>
+    <CudaCompile Include="descracker.cu" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

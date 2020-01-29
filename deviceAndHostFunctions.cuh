@@ -12,6 +12,12 @@ __device__ __host__ uint64_t ApplyPermutation(uint64_t number, int* Permutation_
 __device__ __host__ void SplitInHalf(uint64_t key, uint64_t* left, uint64_t* right, int keyLength);
 __device__ __host__ uint64_t CycleToLeft(uint64_t value, int shiftNumber, int valueLength);
 
+__device__ uint64_t EncryptData_Device(uint64_t dataToEncrypt, uint64_t desKey);
+__device__  void GenerateSubKeys_Device(uint64_t* subKeys, uint64_t desKey);
+__device__  void GenerateKn_Device(uint64_t* subkeys, uint64_t* C, uint64_t* D);
+__device__ uint64_t Function_Device(uint64_t data, uint64_t key);
+__device__ uint64_t Encode_Device(uint64_t* subKeys, uint64_t dataToEncrypt);
+
 #pragma region DeviceAndHostFunctions
 
 __device__ __host__ uint64_t GetNBit(uint64_t number, int bitNumber)
