@@ -132,7 +132,7 @@ __global__ void Crack_Kernel(uint64_t data, uint64_t encodedData, uint64_t *crac
 		if (currentValue == encodedData)
 		{
 			*crackedkey = keycandidate;
-			*foundFlag = false;
+			*foundFlag = true;
 			return;
 		}
 		if (*foundFlag == true)

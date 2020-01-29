@@ -11,4 +11,5 @@ C:/Users/Przem/source/repos/DES_cracker/DES_cracker/kernel.cu(105): warning : in
   
   kernel.cu
 c:\users\przem\source\repos\des_cracker\des_cracker\hostFunctions.cuh(21): warning C4244: 'argument': conversion from 'time_t' to 'unsigned int', possible loss of data
+     Creating library C:\Users\Przem\source\repos\DES_cracker\x64\Debug\DES_cracker.lib and object C:\Users\Przem\source\repos\DES_cracker\x64\Debug\DES_cracker.exp
   DES_cracker.vcxproj -> C:\Users\Przem\source\repos\DES_cracker\x64\Debug\DES_cracker.exe
