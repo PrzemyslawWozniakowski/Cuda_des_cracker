@@ -1,5 +1,5 @@
 # Cuda_des_cracker
-Simple cuda program for cracking des
+Simple cuda program for cracking des for CUDA course lab MINI 2019.
 
 Cracking for various length of keys.
 
